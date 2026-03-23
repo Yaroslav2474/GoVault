@@ -9,6 +9,22 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+type fixedWidthLayout struct {
+	width float32
+}
+
+func (f *fixedWidthLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	for _, obj := range objects {
+		objSize := fyne.NewSize(f.width, obj.MinSize().Height)
+		obj.Resize(objSize)
+		obj.Move(fyne.NewPos((size.Width-f.width)/2, 0))
+	}
+}
+
+func (f *fixedWidthLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	return fyne.NewSize(f.width, 0)
+}
+
 func showErr(msg string, win fyne.Window) {
 	dialog.ShowError(fmt.Errorf("%s", msg), win)
 }
@@ -53,7 +69,6 @@ func CreateLoginWindow(a fyne.App) fyne.Window {
 	masterPass.OnSubmitted = func(_ string) {
 		tryLogin(masterPass.Text, win)
 	}
-	masterPass.MinSize(fyne.NewSize(400, 40))
 
 	btnLogin := widget.NewButton("Login", func() {
 		tryLogin(masterPass.Text, win)
@@ -69,17 +84,23 @@ func CreateLoginWindow(a fyne.App) fyne.Window {
 	errorLabel := widget.NewLabel("")
 	errorLabel.Hidden = true
 
-	form := container.NewVBox(
+	masterPassContainer := container.New(&fixedWidthLayout{width: 400}, masterPass)
+
+	buttonsContainer := container.NewHBox(btnLogin, widget.NewLabel("    "), btnCreate)
+	centeredButtons := container.NewCenter(buttonsContainer)
+
+	content := container.NewVBox(
 		title,
 		widget.NewSeparator(),
-		masterPass,
-		errorLabel,
-		container.NewCenter(btnLogin),
-		container.NewCenter(btnCreate),
+		widget.NewLabel(""),
+		masterPassContainer,
+		widget.NewLabel(""),
+		centeredButtons,
+		widget.NewLabel(""),
 	)
 
-	win.SetContent(container.NewCenter(form))
-	win.Resize(fyne.NewSize(500, 300))
+	win.SetContent(content)
+	win.Resize(fyne.NewSize(500, 350))
 	win.SetOnClosed(func() { masterPass.SetText("") })
 
 	return win
